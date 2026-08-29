@@ -200,7 +200,7 @@ class Handler(SimpleHTTPRequestHandler):
                         # knows which jail to resolve them against
                         out["notes"].append(
                             {"title": p.stem,
-                             "file": f"{int(idx)}/{p.relative_to(root)}"})
+                             "file": f"{int(idx)}/{p.relative_to(root).as_posix()}"})
                 return out
             try:
                 tree = walk(root)
@@ -223,10 +223,30 @@ class Handler(SimpleHTTPRequestHandler):
                         continue
                     if p.is_dir():
                         sub = walkm(p)
-                        if sub["items"] or sub["dirs"]:
+                        # A folder carrying a README was made on purpose, so
+                        # it stays listed even while empty. holo/ and models/
+                        # ship exactly that way -- nothing in them but a
+                        # README saying what to drop in -- and hiding every
+                        # folder with no stageable file made them invisible
+                        # until you had already found them. This board is HOW
+                        # you discover a folder, so the one that teaches you
+                        # the hologram cannot be the one you must know about
+                        # first. Arbitrary empty folders still stay hidden.
+                        documented = (p / "README.md").is_file()
+                        if sub["items"] or sub["dirs"] or documented:
                             out["dirs"].append(sub)
                     elif p.suffix.lower() in EXTS:
-                        out["items"].append(str(p.relative_to(media_root)))
+                        # as_posix, because THE FOLDER IS THE RENDER LAW and
+                        # the law is read client-side with forward slashes.
+                        # str() of a path yields BACKSLASHES on Windows, so
+                        # "fx\fireball.png" never matched /\/fx\// in
+                        # stage.html: props in fx/ silently kept their card
+                        # frame and models in holo/ silently rendered solid
+                        # instead of as the blue wire. These strings become
+                        # URL fragments in the browser, where a backslash is
+                        # not a separator at all, so POSIX is the only
+                        # correct wire format here regardless of platform.
+                        out["items"].append(p.relative_to(media_root).as_posix())
                 return out
             try:
                 tree = walkm(media_root)
