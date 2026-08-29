@@ -58,7 +58,11 @@ HERE = Path(__file__).resolve().parent
 
 
 def load_config():
-    cfg = {"name": "Assistant", "port": 8794, "orbs": []}
+    cfg = {"name": "Assistant", "port": 8794, "orbs": [],
+           # Seconds before a non-idle ring state is treated as stale and
+           # shown as idle. Only ever rescues a writer that died without
+           # saying goodbye; see the note in /orb.
+           "state_timeout_s": 600}
     try:
         cfg.update(json.loads((HERE / "barehands.json").read_text()))
     except Exception:
@@ -74,6 +78,10 @@ def load_config():
 
 
 CONFIG = load_config()
+try:
+    STATE_TIMEOUT = float(CONFIG.get("state_timeout_s", 600))
+except (TypeError, ValueError):
+    STATE_TIMEOUT = 600.0
 
 
 def orb_root(i):
@@ -262,9 +270,24 @@ class Handler(SimpleHTTPRequestHandler):
             s_dir = HERE / "state"
             out = {"state": "idle", "mood": "green", "wave": None}
             try:
-                s = (s_dir / "state").read_text().strip().lower()
+                f = s_dir / "state"
+                s = f.read_text().strip().lower()
                 if s in ("idle", "listening", "thinking", "speaking"):
-                    out["state"] = s
+                    # A STALE non-idle state DECAYS to idle, because the
+                    # only thing that ever writes "idle" is the writer
+                    # finishing. A writer that is killed, crashes, or is
+                    # force-quit mid-turn never writes it -- so the ring
+                    # sat on "thinking" forever, with no timeout, nothing
+                    # to reset it, and no way for anyone to guess why.
+                    #
+                    # This is a safety net for a DEAD writer, not a
+                    # liveness signal: a genuinely long turn will decay
+                    # too, and showing idle during real work is a far
+                    # smaller lie than claiming to think for eternity.
+                    # Raise state_timeout_s if your turns run longer.
+                    age = time.time() - f.stat().st_mtime
+                    if s == "idle" or age < STATE_TIMEOUT:
+                        out["state"] = s
             except Exception:
                 pass
             try:

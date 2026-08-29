@@ -24,10 +24,11 @@ Work through the phases in order. One question at a time; wait for each answer. 
 ## Phase 1: Prove it runs (before any questions)
 
 1. Confirm you are running inside the repo folder (it contains `server.py`, `stage.html`, `barehands.json.example`). If not, ask the person to `cd` there and restart.
-2. Check `python3 --version` (any Python 3.9+ is fine; the server is stdlib-only, nothing to install).
-3. Start the server: `python3 server.py` (`python server.py` on Windows; run it in the background). It prints the URL.
-4. Tell them: open **http://127.0.0.1:8794/stage.html** in **Chrome** (Chrome's hand tracking is the proven path), allow the camera when asked, and wave a hand. A cursor ring should follow their fingers, and the assistant ring should be breathing on the left.
-5. Wait for them to confirm they see it. If the camera fails: the page needs a camera-equipped machine and Chrome; `C` cycles cameras if the wrong one opened. The first load needs internet (the hand-tracking model and 3D library load from Google's and jsdelivr's CDNs, then cache).
+2. **Confirm this machine has a camera before anything else**, because the board is a hand tracker and there is no version of it that works without one. A laptop's built-in camera is fine; a desktop needs a webcam plugged in. If there is none, say so plainly now rather than after a full install.
+3. Check `python3 --version` (any Python 3.9+ is fine; the server is stdlib-only, nothing to install). **On Windows do NOT trust this check**: a clean Windows 11 has no Python but still answers to the name, because the Microsoft Store leaves a stub on the PATH that passes `where python` and then exits 9009 the moment it runs. If `python --version` prints a version, you have one; if it talks about the Store or app execution aliases, you do not.
+4. Start the server: `python3 server.py`. **On Windows run `run.bat` instead** -- it finds an interpreter that genuinely works, falls back to the voice line's own if the machine has no system Python, and says so in plain words if there is nothing usable at all. Run it in the background; it prints the URL.
+5. Tell them: open **http://127.0.0.1:8794/stage.html** in **Chrome** (Chrome's hand tracking is the proven path), allow the camera when asked, and wave a hand. A cursor ring should follow their fingers, and the assistant ring should be breathing on the left.
+6. Wait for them to confirm they see it. If the camera fails: the page needs a camera-equipped machine and Chrome; `C` cycles cameras if the wrong one opened. The first load needs internet (the hand-tracking model and 3D library load from Google's and jsdelivr's CDNs, then cache).
 
 Do not continue until the board is alive on their screen.
 
@@ -61,7 +62,9 @@ Rules: one entry per orb; `notes` orbs may point anywhere; keep exactly one `med
 
 Ask: **"Want your AI wired in, so the ring reflects it working, and it can put things on your board?"** If yes:
 
-**4a. The ring (the face).** If they use Claude Code, merge this into the `hooks` section of their `~/.claude/settings.json` (create it if absent), replacing `REPO` with the absolute repo path:
+**4a. The ring (the face).** If they use Claude Code, merge this into the `hooks` section of the settings file **inside the folder their agent runs in** -- `<their agent folder>/.claude/settings.json`, creating it if absent -- replacing `REPO` with the absolute repo path:
+
+**Put it there and NOT in `~/.claude/settings.json`.** The home-folder file applies to every Claude Code session on the machine, so any session in any folder drives this person's ring: they watch their assistant claim to be thinking when it is idle and some unrelated work is running. Scoping it to the agent's own folder means only their agent moves their agent's face.
 
 ```json
 {
@@ -78,7 +81,9 @@ Ask: **"Want your AI wired in, so the ring reflects it working, and it can put t
 }
 ```
 
-On Windows, adapt the hook commands to the shell (for example `cmd /c echo thinking> REPO/state/state`; the server strips whitespace, so echo's trailing space is harmless). From the next session on, the ring spins up the moment they send a prompt and settles when the work is done. (Any other assistant wires in the same way: write `idle`/`listening`/`thinking`/`speaking` to `state/state`; optionally `state/mood.json` and `state/wave.json`; the format is documented at the top of `server.py`.)
+**The commands above work on Windows unchanged** -- write `REPO` with forward slashes and keep the quotes. Claude Code runs hooks through **bash**, not through `cmd`, so do not translate them: a `cmd /c` version has its backslashes eaten on the way through, the redirect target collapses into one absurd filename in the home folder, and a bare `cmd` with nothing left to run **starts interactively and captures the hook's stdin** -- quietly accumulating a file full of session ids, transcript paths and message text. Forward slashes work everywhere in both shells.
+
+**One thing worth telling them out loud:** the `Stop` hook is the only thing that ever writes `idle`, so a session that is killed or crashes mid-turn never writes it. The server treats a state left untouched for `state_timeout_s` (ten minutes by default) as stale and shows idle anyway, so a dead session settles the ring instead of freezing it on `thinking` forever. From the next session on, the ring spins up the moment they send a prompt and settles when the work is done. (Any other assistant wires in the same way: write `idle`/`listening`/`thinking`/`speaking` to `state/state`; optionally `state/mood.json` and `state/wave.json`; the format is documented at the top of `server.py`.)
 
 **4b. The board (the hands and eyes).** Add this to the CLAUDE.md (or system prompt) of the assistant they want driving the board, with REPO replaced:
 
