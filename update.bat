@@ -6,36 +6,25 @@ rem
 rem Your barehands.json is yours: nothing in this script can touch or overwrite it.
 rem Safe to run any time; when nothing is new it just says so.
 
+rem NO SELF-RELAUNCH, and the reason is worth keeping.
+rem
 rem cmd reads a .bat by byte offset, so a script that pulls a new copy of
-rem ITSELF mid-run gets garbled from that point on. Relaunch from a copy
-rem before doing any work.
+rem ITSELF mid-run can garble from that point on. This used to guard against
+rem that by copying itself into LOCALAPPDATA and running the copy.
 rem
-rem The copy lives in this program's own folder under LOCALAPPDATA and NOT
-rem in the system temp directory. Identical protection, and it stops the
-rem script reading like something stashing an executable where nobody
-rem looks. Reviewers read repos too, and copy-to-temp-then-run is the
-rem shape people are trained to distrust.
+rem Copying yourself somewhere and running the copy is a shape security
+rem software is built to distrust, and it cannot see why you did it. On
+rem some machines that stopped the install outright: the scanner held this
+rem file open and the unpack could not write it.
 rem
-rem Invoked WITHOUT `call` deliberately: cmd hands control to the copy and
-rem never returns here, so not one further byte of this file is read after
-rem the pull rewrites it. If the copy cannot be made, execution falls
-rem through to :run below and does the work in place.
-if "%~1"=="__run__" goto run
-if not defined LOCALAPPDATA goto run
-set "RUNDIR=%LOCALAPPDATA%\barehands"
-if not exist "%RUNDIR%\" mkdir "%RUNDIR%" >nul 2>nul
-copy /y "%~f0" "%RUNDIR%\update-run.bat" >nul
-"%RUNDIR%\update-run.bat" __run__ "%~dp0"
+rem The guard was never worth that. It only mattered on an update that
+rem changed this very script, and by then the pull had already succeeded.
+rem The worst case now is an odd looking line at the very end. If you ever
+rem see one, just run this again.
 
-:run
+
 setlocal
-rem Where the work happens. Normally the relaunched copy is handed the
-rem original folder as %2. On the fallback path above (no LOCALAPPDATA,
-rem or the copy could not be made) there is no %2, so resolve to this
-rem file's own folder instead of cd-ing to nowhere.
-set "HOME_DIR=%~2"
-if not defined HOME_DIR set "HOME_DIR=%~dp0"
-cd /d "%HOME_DIR%"
+cd /d "%~dp0"
 set CFG=barehands.json
 
 if exist ".git\" goto havegit
