@@ -1418,6 +1418,48 @@ function browserRefresh(b) {
   b.body.style.transform = `translateY(${-b.scrollY}px)`;
 }
 
+// THE PANE MUST NOT LAND ON THE RING. Growing it from the orb's spot is
+// right and stays, but the orbs bloom about 330px out while this pane is
+// 560 wide -- so centring on an orb reliably parks it ON the ring, hiding
+// the very thing you tapped to get here and leaving no way back without
+// dragging the pane off it first.
+//
+// So the pane is pushed along whichever side of the ring the orb was on,
+// until its near edge clears the ring's own radius. Nearest clearing side
+// wins, so it still grows in the direction you reached. If neither side
+// can clear it -- a narrow window with the ring in the middle -- the
+// roomier side is taken, which is the least bad of two bad options rather
+// than a silent failure.
+const BROWSER_HALF_W = 280;            // .panel.browser is 560 wide
+const BROWSER_HALF_H = 360;            // ...and 720 tall
+const RING_RADIUS = 220;               // the ring canvas is 440 square
+
+function browserClampX(v) {
+  return Math.min(Math.max(v, BROWSER_HALF_W + 20),
+                  innerWidth - BROWSER_HALF_W - 20);
+}
+
+function browserX(ox) {
+  let x = ox != null ? ox : innerWidth * 0.38;
+  const ring = items.find(i => i.type === "widget" && i.def && i.def.w === "ring");
+  if (ring) {
+    const clear = RING_RADIUS * (ring.scale || 1) + BROWSER_HALF_W + 24;
+    const left = browserClampX(ring.x - clear);
+    const right = browserClampX(ring.x + clear);
+    const ok = [left, right].filter(v => Math.abs(v - ring.x) >= clear);
+    x = ok.length
+      ? ok.reduce((a, b) => (Math.abs(b - x) < Math.abs(a - x) ? b : a))
+      : (Math.abs(left - ring.x) > Math.abs(right - ring.x) ? left : right);
+  }
+  return browserClampX(x);
+}
+
+function browserY(oy) {
+  const y = oy != null ? oy : innerHeight * 0.46;
+  return Math.min(Math.max(y, BROWSER_HALF_H + 20),
+                  innerHeight - BROWSER_HALF_H - 20);
+}
+
 function openBrowser(kind, ox, oy) {
   // TOGGLE: tap the orb (or summon) again = the pane recedes. Phase 2:
   // an orb tap passes its position so the pane GROWS FROM the orb's
@@ -1435,10 +1477,7 @@ function openBrowser(kind, ox, oy) {
     const b = { el, id: UID++, type: "browser", bkind: kind,
       def: { title: label, file: "" },
       expanded: new Set(), rows: [], rowTuples: [], rowsV: 0,
-      x: ox != null ? Math.min(Math.max(ox, 300), innerWidth - 300)
-                    : innerWidth * 0.38,
-      y: oy != null ? Math.min(Math.max(oy, 380), innerHeight - 380)
-                    : innerHeight * 0.46,
+      x: browserX(ox), y: browserY(oy),
       scale: 1, vx: 0, vy: 0,
       grabbedBy: [], ox: 0, oy: 0, flying: false, stretch: null,
       scrollY: 0, body: el.querySelector(".scroll") };
