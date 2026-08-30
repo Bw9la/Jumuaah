@@ -71,7 +71,7 @@ Hand tracking by [Google MediaPipe](https://developers.google.com/mediapipe) (Ap
 
 ## Updating
 
-barehands improves continuously, and gesture fixes ship often. To update, double-click the `Update` icon setup left on your Desktop, or run `./update.sh` (`update.bat` on Windows) in this folder: either shows you what changed before applying it. Saying **"pull the latest barehands and tell me what changed"** to your agent works too. Your config, your notes, and your media stay untouched: they live outside the tracked files. Installed through fullstack-agent? `./fullstack-agent/update.sh` updates every piece at once and prints what changed.
+barehands improves continuously, and gesture fixes ship often. To update on macOS, double-click the `Update` icon setup left on your Desktop, or run `./update.sh` in this folder. On Windows, or any time, say **"pull the latest barehands and tell me what changed"** to your agent — it does the same job. Your config, your notes, and your media stay untouched: they live outside the tracked files. Installed through fullstack-agent? `./fullstack-agent/update.sh` (macOS) updates every piece at once and prints what changed.
 
 ## The rest of it
 
