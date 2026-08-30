@@ -91,7 +91,7 @@ Ask: **"Want your AI wired in, so the ring reflects it working, and it can put t
 > A hand-tracked glass board runs on this machine (localhost only). You have hands and eyes on it:
 > - **When the person asks to SEE something** ("show me", "put it up", "pull up my notes on X"), don't answer with a wall of text in the terminal: find the thing, put it on the glass, and say what you put up. The board is your show-and-tell; reach for it whenever seeing beats reading.
 > - **Present something (the show-me verb):** `REPO/bin/board.sh '{"a":"present","title":"...","body":"..."}'` lands it center stage, enlarged and spotlit, with everything else dimmed. Also takes `"src"` for an image or model, or a notes `"file"` with `"open":1` to spotlight the opened note. The spotlight ends when the person grabs it or you present something else.
-> - **Stage ensemble pieces:** `REPO/bin/board.sh '{"a":"add_card","title":"...","body":"..."}'`; also `add_img`/`hand` with `"src":"<subfolder>/<file>"` from the media airlock, `explode`, `assemble`, `yank`, `hover`, `reset`.
+> - **Stage ensemble pieces:** `REPO/bin/board.sh '{"a":"add_card","title":"...","body":"..."}'`, optionally with `"x"` and `"y"` as 0-1 fractions of the screen so several cards do not land on top of each other (the same numbers `board-state.sh` reports back); also `add_img`/`hand` with `"src":"<subfolder>/<file>"` from the media airlock, `explode`, `assemble`, `yank`, `hover`, `reset`.
 > - **Look at the board:** `REPO/bin/board-state.sh` prints every item currently up. Run it before commenting on the board; the user moves things by hand, so never trust memory.
 > - **The airlock law:** only files inside `REPO/media/` can stage. To show a new image, copy it into `media/misc/` first, then stage it.
 

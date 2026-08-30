@@ -1199,7 +1199,15 @@ function applyCmds(cmds) {
                             file: c.file || "" });
       if (c.hand) deliver(it);
       else {
-        it.x = innerWidth * 0.5; it.y = innerHeight * 0.4;
+        // Optional x/y, as 0..1 fractions of the viewport -- the same
+        // convention /state already reports positions in, so what you
+        // read back is what you can send. Without them the old centre
+        // is kept, so nothing that worked before moves. Clamped, because
+        // a card at 1.4 is a card nobody can reach to drag back.
+        const nx = typeof c.x === "number" ? c.x : 0.5;
+        const ny = typeof c.y === "number" ? c.y : 0.4;
+        it.x = Math.min(0.92, Math.max(0.08, nx)) * innerWidth;
+        it.y = Math.min(0.92, Math.max(0.08, ny)) * innerHeight;
         it.anim = { k: "in", t: 0 }; it.el.style.opacity = "0.05";
       }
       items.push(it);
